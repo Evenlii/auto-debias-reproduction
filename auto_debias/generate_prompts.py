@@ -32,7 +32,7 @@ def generate_prompts(args: Namespace, logger: Logger):
 
     # load and tokenize stereotype words
     logger.info(
-        f"Load and tokenize stereotype words: {args.data_dir + 'stereotype_words.txt'}"
+        f"Load and tokenize stereotype words: {args.data_dir + 'debias/stereotype_words.txt'}"
     )
     stereotype_words = clear_words(
         _words1=load_words(
@@ -46,10 +46,10 @@ def generate_prompts(args: Namespace, logger: Logger):
 
     # load prompt words
     logger.info(
-        f"Load and tokenize prompt words: {args.data_dir + 'wiki_words_5000.txt'}"
+        f"Load and tokenize prompt words: {args.data_dir + 'debias/wiki_words_5000.txt'}"
     )
     prompt_words = clear_words(
-        _words1=load_words(path=args.data_dir + "wiki_words_5000.txt", mode=args.mode),
+        _words1=load_words(path=args.data_dir + "debias/wiki_words_5000.txt", mode=args.mode),
         _words2=None,
         tokenizer=tokenizer,
         mode=args.mode,
