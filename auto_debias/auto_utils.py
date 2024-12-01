@@ -463,7 +463,7 @@ def get_logits(
 
         return freezing_logits, tuning_logits
 
-    elif mode == "prompt" and freezing_model is not None and tuning_model is None:
+    elif mode == "generate" and freezing_model is not None and tuning_model is None:
         outputs = freezing_model.forward(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
@@ -487,6 +487,7 @@ def get_js_div_values(
     targ1_mask_idx: np.ndarray,
     targ2_mask_idx: np.ndarray,
     model: Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
+    tokenizer: Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer],
     stereotype_ids: List[int],
     js_div_module: JSDivergence,
     args: Namespace,
@@ -499,19 +500,21 @@ def get_js_div_values(
         targ1_mask_idx (np.ndarray): Positions for [MASK] token in target 1 concept tokens.
         targ2_mask_idx (np.ndarray): Positions for [MASK] token in target 2 concept tokens.
         model (Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM]): A pre-trained language model.
+        tokenizer (Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer]): A pre-trained tokenizer.
         stereotype_ids (List[int]): Pre-defined stereotype ids.
         js_div_module (JSDivergence): A JS-Divergence module.
         args (Namespace): A parsed arguments.
 
     Returns:
-        js_div_values (List[np.ndarray]): _description_
+        js_div_values (List[np.ndarray]): JS-Divergence values for all prompts.
     """
     js_div_values = []
     # send all tokens to cuda for dataparallel
     targ1_tokens, targ2_tokens = to_cuda(targ1_tokens=targ1_tokens, targ2_tokens=targ2_tokens)
 
+    # Loop through all batches
     for batch_idx in range(torch.Tensor.size(targ1_tokens["input_ids"])[0] // args.batch_size + 1):
-        # slice inputs as batch size
+        # Slice inputs as batch size
         targ1_inputs, targ2_inputs, targ1_batch_mask_idx, targ2_batch_mask_idx = get_batch_inputs(
             batch_idx=batch_idx,
             targ1_tokens=targ1_tokens,
@@ -521,33 +524,73 @@ def get_js_div_values(
             args=args,
         )
 
-        # get logits of stereotype words
-        targ1_logits = get_logits(
-            model=model,
-            inputs=targ1_inputs,
-            mask_idx=targ1_batch_mask_idx,
-            stereotype_ids=stereotype_ids,
-            mode="generate",
-            finetune_ids=None,
-        )
-        targ2_logits = get_logits(
-            model=model,
-            inputs=targ2_inputs,
-            mask_idx=targ2_batch_mask_idx,
-            stereotype_ids=stereotype_ids,
-            mode="generate",
-            finetune_ids=None,
-        )
+        # Get logits of stereotype words
+        if args.mode == "auto-debias":
+            # For auto-debias, pass only the tuning model
+            targ1_logits = get_logits(
+                freezing_model=None,
+                tuning_model=model,
+                inputs=targ1_inputs,
+                mask_idx=targ1_batch_mask_idx,
+                stereotype_ids=stereotype_ids,
+                mode=args.mode,
+            )
+            targ2_logits = get_logits(
+                freezing_model=None,
+                tuning_model=model,
+                inputs=targ2_inputs,
+                mask_idx=targ2_batch_mask_idx,
+                stereotype_ids=stereotype_ids,
+                mode=args.mode,
+            )
+        elif args.mode == "aa-debias":
+            # For aa-debias, use both freezing and tuning models
+            freezing_model, tuning_model, _ = model
+            targ1_logits, _ = get_logits(
+                freezing_model=freezing_model,
+                tuning_model=tuning_model,
+                inputs=targ1_inputs,
+                mask_idx=targ1_batch_mask_idx,
+                stereotype_ids=stereotype_ids,
+                mode=args.mode,
+            )
+            targ2_logits, _ = get_logits(
+                freezing_model=freezing_model,
+                tuning_model=tuning_model,
+                inputs=targ2_inputs,
+                mask_idx=targ2_batch_mask_idx,
+                stereotype_ids=stereotype_ids,
+                mode=args.mode,
+            )
+        elif args.mode == "prompt":
+            # For prompt mode, use only one model (freezing_model)
+            targ1_logits = get_logits(
+                freezing_model=model,
+                tuning_model=None,
+                inputs=targ1_inputs,
+                mask_idx=targ1_batch_mask_idx,
+                stereotype_ids=stereotype_ids,
+                mode=args.mode,
+            )
+            targ2_logits = get_logits(
+                freezing_model=model,
+                tuning_model=None,
+                inputs=targ2_inputs,
+                mask_idx=targ2_batch_mask_idx,
+                stereotype_ids=stereotype_ids,
+                mode=args.mode,
+            )
 
-        # get JS-Divergence value for two networks
+        # Get JS-Divergence value for two networks
         js_div_value = js_div_module.forward(net1_logits=targ1_logits, net2_logits=targ2_logits)
         js_div_sum = np.sum(js_div_value.detach().cpu().numpy(), axis=1)
-        # accumulate all JS-Divergence values
+        # Accumulate all JS-Divergence values
         js_div_values += list(js_div_sum)
 
         del targ1_logits, targ2_logits, js_div_value
 
     return js_div_values
+
 
 
 def get_prompt_js_div(
