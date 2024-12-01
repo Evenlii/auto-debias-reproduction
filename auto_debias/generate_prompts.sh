@@ -20,23 +20,22 @@ CKPT_PATH=./ckpts/
 PRECISION=16
 
 python generate_prompts.py \
-    --model_version ${MODEL_VERSION} \
-    --model_name ${MODEL_NAME} \
-    --seed ${SEED} \
-    --batch_size ${BATCH_SIZE} \
-    --debias_type ${DEBIAS_TYPE} \
-    --run_no ${RUN_NO} \
-    --data_dir ${DATA_DIR} \
-    --max_prompt_len ${MAX_PROMPT_LEN} \
-    --top_k ${TOP_K} \
-    --save_dir ${SAVE_DIR} \
-    --num_workers ${NUM_WORKERS} \
-    --lr ${LR} \
-    --accumulate_grad_batches ${ACCUMULATE_GRAD_BATCHES} \
-    --gradient_clip_val ${GRADIENT_CLIP_VAL} \
-    --max_epochs ${MAX_EPOCHS} \
-    --output_dir ${OUTPUT_DIR} \
-    --gpus ${GPUS} \
-    --patience ${PATIENCE} \
-    --ckpt_path ${CKPT_PATH} \
-    --precision ${PRECISION}
+    --model_version bert-base-uncased \
+    --model_name bert \
+    --seed 42 \
+    --batch_size 1000 \
+    --debias_type gender \
+    --run_name run00 \
+    --data_dir ./data/ \
+    --max_prompt_len 5 \
+    --top_k 100 \
+    --output_dir ./prompts/ \
+    --num_workers 4 \
+    --lr 2e-5 \
+    --accumulate_grad_batches 1 \
+    --gradient_clip_val 1.0 \
+    --max_epochs 100 \
+    --output_dir ./out/ \
+    --gpus 2 \
+    --patience 10 \
+    --precision 16
