@@ -21,7 +21,7 @@ def parse_arguments():
     """Parse command-line arguments."""
     parser = ArgumentParser()
 
-    # Add arguments from the script
+    # Add all required arguments
     parser.add_argument("--model_version", type=str, required=True, help="Model version")
     parser.add_argument(
         "--model_name", type=str, choices=["bert", "roberta", "gpt2"], required=True, help="Model name"
@@ -31,9 +31,10 @@ def parse_arguments():
     parser.add_argument(
         "--debias_type", type=str, choices=["gender", "race"], required=True, help="Debiasing type"
     )
-    parser.add_argument("--run_no", type=str, default="run00", help="Run identifier")
+    parser.add_argument("--run_no", type=str, default="run00", help="Run identifier")  # Add this
     parser.add_argument("--data_dir", type=str, required=True, help="Data directory")
-    parser.add_argument("--save_dir", type=str, default="./prompts/", help="Directory to save prompts")
+    parser.add_argument("--save_dir", type=str, default="./prompts/", help="Directory to save prompts")  # Add this
+    parser.add_argument("--ckpt_path", type=str, default="./ckpts/", help="Checkpoint path")  # Add this
     parser.add_argument("--max_prompt_len", type=int, default=5, help="Max length of prompts")
     parser.add_argument("--top_k", type=int, default=100, help="Top-K prompts to select")
     parser.add_argument("--num_workers", type=int, default=4, help="Number of workers")
@@ -51,7 +52,6 @@ def parse_arguments():
     parser.add_argument("--output_dir", type=str, default="./out/", help="Output directory")
     parser.add_argument("--gpus", type=int, default=1, help="Number of GPUs to use")
     parser.add_argument("--patience", type=int, default=10, help="Patience for early stopping")
-    parser.add_argument("--ckpt_path", type=str, default="./ckpts/", help="Checkpoint path")
     parser.add_argument("--precision", type=int, default=16, help="Precision (e.g., 16 for fp16)")
 
     return parser.parse_args()
