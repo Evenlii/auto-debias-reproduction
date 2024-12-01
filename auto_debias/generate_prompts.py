@@ -36,7 +36,7 @@ def generate_prompts(args: Namespace, logger: Logger):
     )
     stereotype_words = clear_words(
         _words1=load_words(
-            path=args.data_dir + "stereotype_words.txt", mode="stereotype"
+            path=args.data_dir + "debias/stereotype_words.txt", mode="stereotype"
         ),
         _words2=None,
         tokenizer=tokenizer,
