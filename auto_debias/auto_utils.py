@@ -463,7 +463,7 @@ def get_logits(
 
         return freezing_logits, tuning_logits
 
-    elif mode == "prompts" and freezing_model is not None and tuning_model is None:
+    elif mode == "prompt" and freezing_model is not None and tuning_model is None:
         outputs = freezing_model.forward(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
