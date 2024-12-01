@@ -1,5 +1,6 @@
 MODEL_VERSION=bert-base-uncased
 MODEL_NAME=bert
+MODE=prompt
 SEED=42
 BATCH_SIZE=1000
 DEBIAS_TYPE=gender
@@ -22,6 +23,7 @@ PRECISION=16
 python auto_debias/generate_prompts.py \
     --model_version ${MODEL_VERSION} \
     --model_name ${MODEL_NAME} \
+    --mode ${MODE} \
     --seed ${SEED} \
     --batch_size ${BATCH_SIZE} \
     --debias_type ${DEBIAS_TYPE} \
