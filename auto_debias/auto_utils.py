@@ -414,8 +414,8 @@ def get_batch_inputs(
 
 
 def get_logits(
-    freezing_model: Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
-    tuning_model: Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
+    freezing_model: Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM, None],
+    tuning_model: Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM, None],
     inputs: Dict[str, torch.LongTensor],
     mask_idx: np.ndarray,
     stereotype_ids: List[int],
@@ -425,54 +425,60 @@ def get_logits(
     """Get logits corresponding to stereotype words at [MASK] token position.
 
     Args:
-        freezing_model (Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM]): A pre-trained language model for freezing.
-        tuning_model (Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM]): A pre-trained language model for fine-tuning.
+        freezing_model (Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM, None]): A pre-trained language model for freezing.
+        tuning_model (Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM, None]): A pre-trained language model for fine-tuning.
         inputs (Dict[str, torch.LongTensor]): Tokenized prompt inputs with a [MASK] token.
         mask_idx (np.ndarray): An index of a [MASK] token in tokenized prompt inputs.
         stereotype_ids (List[int]): Pre-defined stereotype ids.
         mode (str): A status of either generating prompts or debiasing models.
         finetune_ids (List[int], optional): Whether or not to fine-tune specific vocab. Default to None.
+
+    Returns:
+        Union[torch.FloatTensor, Tuple[torch.FloatTensor, torch.FloatTensor]]: Logits or tuple of logits.
     """
-    if mode == "auto-debias" and freezing_model is None and tuning_model is not None:
-        outputs = tuning_model.forward(
+    logits = None
+
+    if mode == "auto-debias" and tuning_model is not None:
+        outputs = tuning_model(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            token_type_ids=inputs["token_type_ids"],
+            token_type_ids=inputs.get("token_type_ids"),
         )
         if finetune_ids is not None:
-            _logits = outputs.logits[torch.arange(torch.Tensor.size(outputs.logits)[0]), mask_idx]
+            _logits = outputs.logits[torch.arange(outputs.logits.size(0)), mask_idx]
             logits = _logits[:, finetune_ids]
         else:
-            logits = outputs.logits[torch.arange(torch.Tensor.size(outputs.logits)[0]), mask_idx]
-
-        return logits
+            logits = outputs.logits[torch.arange(outputs.logits.size(0)), mask_idx]
 
     elif mode == "aa-debias" and freezing_model is not None and tuning_model is not None:
-        freezing_outputs = freezing_model.forward(
+        freezing_outputs = freezing_model(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            token_type_ids=inputs["token_type_ids"],
+            token_type_ids=inputs.get("token_type_ids"),
         )
-        tuning_outputs = tuning_model.forward(
+        tuning_outputs = tuning_model(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            token_type_ids=inputs["token_type_ids"],
+            token_type_ids=inputs.get("token_type_ids"),
         )
-        freezing_logits = freezing_outputs.logits[torch.arange(torch.Tensor.size(freezing_outputs.logits)[0]), mask_idx]
-        tuning_logits = tuning_outputs.logits[torch.arange(torch.Tensor.size(tuning_outputs.logits)[0]), mask_idx]
+        freezing_logits = freezing_outputs.logits[torch.arange(freezing_outputs.logits.size(0)), mask_idx]
+        tuning_logits = tuning_outputs.logits[torch.arange(tuning_outputs.logits.size(0)), mask_idx]
 
         return freezing_logits, tuning_logits
 
-    elif mode == "generate" and freezing_model is not None and tuning_model is None:
-        outputs = freezing_model.forward(
+    elif mode == "prompt" and freezing_model is not None:
+        outputs = freezing_model(
             input_ids=inputs["input_ids"],
             attention_mask=inputs["attention_mask"],
-            token_type_ids=inputs["token_type_ids"],
+            token_type_ids=inputs.get("token_type_ids"),
         )
-        # extract logits only for stereotype words
-        logits = outputs.logits[np.arange(torch.Tensor.size(inputs["input_ids"])[0]), mask_idx][:, stereotype_ids]
+        # Extract logits only for stereotype words
+        logits = outputs.logits[torch.arange(outputs.logits.size(0)), mask_idx][:, stereotype_ids]
 
-        return logits
+    if logits is None:
+        raise ValueError(f"Logits not generated for mode: {mode}. Please check the function parameters.")
+
+    return logits
 
 
 def get_cosine_similarity(logits1: torch.FloatTensor, logits2: torch.FloatTensor) -> torch.FloatTensor:
