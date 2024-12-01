@@ -509,10 +509,9 @@ def get_js_div_values(
         js_div_values (List[np.ndarray]): JS-Divergence values for all prompts.
     """
     js_div_values = []
-    # send all tokens to cuda for dataparallel
+    # Send all tokens to CUDA for DataParallel
     targ1_tokens, targ2_tokens = to_cuda(targ1_tokens=targ1_tokens, targ2_tokens=targ2_tokens)
 
-    # Loop through all batches
     for batch_idx in range(torch.Tensor.size(targ1_tokens["input_ids"])[0] // args.batch_size + 1):
         # Slice inputs as batch size
         targ1_inputs, targ2_inputs, targ1_batch_mask_idx, targ2_batch_mask_idx = get_batch_inputs(
@@ -525,61 +524,22 @@ def get_js_div_values(
         )
 
         # Get logits of stereotype words
-        if args.mode == "auto-debias":
-            # For auto-debias, pass only the tuning model
-            targ1_logits = get_logits(
-                freezing_model=None,
-                tuning_model=model,
-                inputs=targ1_inputs,
-                mask_idx=targ1_batch_mask_idx,
-                stereotype_ids=stereotype_ids,
-                mode=args.mode,
-            )
-            targ2_logits = get_logits(
-                freezing_model=None,
-                tuning_model=model,
-                inputs=targ2_inputs,
-                mask_idx=targ2_batch_mask_idx,
-                stereotype_ids=stereotype_ids,
-                mode=args.mode,
-            )
-        elif args.mode == "aa-debias":
-            # For aa-debias, use both freezing and tuning models
-            freezing_model, tuning_model, _ = model
-            targ1_logits, _ = get_logits(
-                freezing_model=freezing_model,
-                tuning_model=tuning_model,
-                inputs=targ1_inputs,
-                mask_idx=targ1_batch_mask_idx,
-                stereotype_ids=stereotype_ids,
-                mode=args.mode,
-            )
-            targ2_logits, _ = get_logits(
-                freezing_model=freezing_model,
-                tuning_model=tuning_model,
-                inputs=targ2_inputs,
-                mask_idx=targ2_batch_mask_idx,
-                stereotype_ids=stereotype_ids,
-                mode=args.mode,
-            )
-        elif args.mode == "prompt":
-            # For prompt mode, use only one model (freezing_model)
-            targ1_logits = get_logits(
-                freezing_model=model,
-                tuning_model=None,
-                inputs=targ1_inputs,
-                mask_idx=targ1_batch_mask_idx,
-                stereotype_ids=stereotype_ids,
-                mode=args.mode,
-            )
-            targ2_logits = get_logits(
-                freezing_model=model,
-                tuning_model=None,
-                inputs=targ2_inputs,
-                mask_idx=targ2_batch_mask_idx,
-                stereotype_ids=stereotype_ids,
-                mode=args.mode,
-            )
+        targ1_logits = get_logits(
+            freezing_model=model,
+            tuning_model=None,
+            inputs=targ1_inputs,
+            mask_idx=targ1_batch_mask_idx,
+            stereotype_ids=stereotype_ids,
+            mode=args.mode,
+        )
+        targ2_logits = get_logits(
+            freezing_model=model,
+            tuning_model=None,
+            inputs=targ2_inputs,
+            mask_idx=targ2_batch_mask_idx,
+            stereotype_ids=stereotype_ids,
+            mode=args.mode,
+        )
 
         # Get JS-Divergence value for two networks
         js_div_value = js_div_module.forward(net1_logits=targ1_logits, net2_logits=targ2_logits)
@@ -619,28 +579,30 @@ def get_prompt_js_div(
         accum_prompt_js_div_values (np.ndarray): Accumulated JS-Divergence values for all prompts.
     """
     prompt_js_div_values = []
-    # for i in tqdm(iterable=range(len(targ1_words))):
+
     for i in tqdm(range(len(targ1_words))):
-        # create all possible prompts combination for i-th target concept word
+        # Create all possible prompts combination for i-th target concept word
         targ1_tokens, targ2_tokens, targ1_mask_idx, targ2_mask_idx = tokenize_ith_prompts(
             prompts=prompts,
             targ1_word=targ1_words[i],
             targ2_word=targ2_words[i],
             tokenizer=tokenizer,
         )
-        # get JS-Divergence values of i-th target concept word
+        # Get JS-Divergence values of i-th target concept word
         js_div_values = get_js_div_values(
             targ1_tokens=targ1_tokens,
             targ2_tokens=targ2_tokens,
             targ1_mask_idx=targ1_mask_idx,
             targ2_mask_idx=targ2_mask_idx,
             model=model,
+            tokenizer=tokenizer,
             stereotype_ids=stereotype_ids,
             js_div_module=js_div_module,
             args=args,
         )
-        # accumulate all target concept words
+        # Accumulate all target concept words
         prompt_js_div_values.append(js_div_values)
+
     prompt_js_div_values = np.array(prompt_js_div_values)
     accum_prompt_js_div_values = np.mean(prompt_js_div_values, axis=0)
 
