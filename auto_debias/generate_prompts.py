@@ -1,8 +1,8 @@
 import numpy as np
 from logging import Logger
 from argparse import Namespace
-from aa_config import get_aa_args
-from aa_utils import (
+from auto_config import get_aa_args
+from auto_utils import (
     clear_console,
     get_aa_logger,
     prepare_model_and_tokenizer,
