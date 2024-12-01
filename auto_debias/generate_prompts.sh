@@ -25,7 +25,7 @@ python generate_prompts.py \
     --seed ${SEED} \
     --batch_size ${BATCH_SIZE} \
     --debias_type ${DEBIAS_TYPE} \
-    --run_no ${RUN_NO} \
+    --run_name ${RUN_NO} \
     --data_dir ${DATA_DIR} \
     --max_prompt_len ${MAX_PROMPT_LEN} \
     --top_k ${TOP_K} \
