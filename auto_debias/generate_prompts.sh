@@ -4,10 +4,10 @@ SEED=42
 BATCH_SIZE=1000
 DEBIAS_TYPE=gender
 RUN_NO=run00
-DATA_DIR=./data/
+DATA_DIR=./data/debias/
 MAX_PROMPT_LEN=5
 TOP_K=100
-SAVE_DIR=./prompts/
+SAVE_DIR=./auto_debias/
 NUM_WORKERS=4
 LR=2e-5
 ACCUMULATE_GRAD_BATCHES=1
@@ -19,7 +19,7 @@ PATIENCE=10
 CKPT_PATH=./ckpts/
 PRECISION=16
 
-python generate_prompts.py \
+python auto_debias/generate_prompts.py \
     --model_version ${MODEL_VERSION} \
     --model_name ${MODEL_NAME} \
     --seed ${SEED} \
