@@ -55,6 +55,7 @@ def generate_prompts(args: Namespace, logger: Logger):
         mode=args.mode,
     )
     # init prompts
+    print(f"prompt_words: {prompt_words}")
     current_prompts = prompt_words
 
     # create and open prompt file
