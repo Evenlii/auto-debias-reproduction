@@ -18,7 +18,7 @@ def get_aa_args():
     parser.add_argument("--data_dir", default="./data/", type=str)
     parser.add_argument(
         "--mode",
-        default="prompt",
+        default="auto-debias",
         type=str,
         choices=["prompt", "auto-debias", "aa-debias"],
     )
