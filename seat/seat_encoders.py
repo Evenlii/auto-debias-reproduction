@@ -2,8 +2,7 @@ from typing import Dict, List, Tuple, Union
 from numpy import ndarray
 import torch
 from argparse import Namespace
-from transformers import AlbertPreTrainedModel
-from transformers.models.bert.tokenization_bert import BertTokenizer
+from transformers import AlbertPreTrainedModel, BertModel, BertTokenizer
 from transformers.models.roberta.tokenization_roberta import RobertaTokenizer
 from transformers.models.albert.tokenization_albert import AlbertTokenizer
 from transformers.models.bert.modeling_bert import BertForMaskedLM
@@ -14,7 +13,7 @@ from transformers.models.albert.modeling_albert import AlbertForMaskedLM
 def load_model_and_tokenizer(
     version: str, args: Namespace
 ) -> Tuple[
-    Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
+    Union[BertModel, RobertaForMaskedLM, AlbertForMaskedLM],
     Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer],
 ]:
     """Load a pre-trained or checkpoint model as evaluation and corresponding tokenizer.
@@ -24,13 +23,13 @@ def load_model_and_tokenizer(
         args (Namespace): A parsed arguments.
 
     Returns:
-        model (Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM]): A pre-trained or checkpoint model.
+        model (Union[BertModel, RobertaForMaskedLM, AlbertForMaskedLM]): A pre-trained or checkpoint model.
         tokenizer (Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer]): A pre-trained tokenizer.
     """
     if args.use_ckpt:
         # load from checkpoint
         if "bert" in version:
-            model = BertForMaskedLM.from_pretrained(args.ckpt_dir)
+            model = BertModel.from_pretrained(args.ckpt_dir)
         elif "roberta" in version:
             model = RobertaForMaskedLM.from_pretrained(args.ckpt_dir)
         else:
@@ -38,7 +37,7 @@ def load_model_and_tokenizer(
     else:
         # load from huggingface
         if "bert" in version:
-            model = BertForMaskedLM.from_pretrained(version)
+            model = BertModel.from_pretrained(version)
         elif "roberta" in version:
             model = RobertaForMaskedLM.from_pretrained(version)
         else:
@@ -60,7 +59,7 @@ def load_model_and_tokenizer(
 def get_encodings(
     data_keys: List[str],
     data: Dict[str, str],
-    model: Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
+    model: Union[BertModel, RobertaForMaskedLM, AlbertForMaskedLM],
     tokenizer: Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer],
 ) -> Tuple[Dict[str, ndarray], Dict[str, ndarray], Dict[str, ndarray], Dict[str, ndarray]]:
     """Encode the input data using the PreTrainedTokenizer and PreTrainedModel.
@@ -68,7 +67,7 @@ def get_encodings(
     Args:
         data_keys (List[str]): Key names for iteration.
         data (Dict[str, str]): An input data.
-        model (Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM]): A Pre-trained PreTrainedModel model.
+        model (Union[BertModel, RobertaForMaskedLM, AlbertForMaskedLM]): A Pre-trained PreTrainedModel model.
         tokenizer (Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer]): A Pre-trained PreTrainedTokenizer.
 
     Returns:
@@ -86,8 +85,8 @@ def get_encodings(
             segments_tensor = torch.tensor([segment_ids])
 
             # get BERT outputs
-            if type(model) == BertForMaskedLM:
-                outputs = model.bert.forward(input_ids=tokens_tensor, token_type_ids=segments_tensor)
+            if isinstance(model, BertModel):
+                outputs = model(input_ids=tokens_tensor, token_type_ids=segments_tensor)
             elif type(model) == RobertaForMaskedLM:
                 outputs = model.roberta.forward(input_ids=tokens_tensor, token_type_ids=segments_tensor)
             else:
