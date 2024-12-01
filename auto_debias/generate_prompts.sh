@@ -25,7 +25,7 @@ python generate_prompts.py \
     --seed 42 \
     --batch_size 1000 \
     --debias_type gender \
-    --run_no run00 \
+    --run_name run00 \
     --data_dir ./data/ \
     --max_prompt_len 5 \
     --top_k 100 \
