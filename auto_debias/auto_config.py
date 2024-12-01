@@ -43,5 +43,8 @@ def get_aa_args():
     parser.add_argument("--patience", default=10, type=int)
     parser.add_argument("--precision", default=16, type=int)
     parser.add_argument("--finetune_vocab", default=None, type=str)
+    parser.add_argument("--save_dir", type=str, default="./prompts/", help="Directory to save prompts")  # Added
+    parser.add_argument("--ckpt_path", type=str, default="./ckpts/", help="Checkpoint path")  # Added
+
 
     return parser.parse_args()
