@@ -158,24 +158,9 @@ def get_aa_logger(args: Namespace) -> Logger:
 
 def prepare_model_and_tokenizer(
     model_name: str, model_version: str, mode: str
-) -> Union[
-    Tuple[
-        Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
-        Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer],
-    ],
-    Tuple[
-        Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
-        Union[BertForMaskedLM, RobertaForMaskedLM, AlbertForMaskedLM],
-        Union[BertTokenizer, RobertaTokenizer, AlbertTokenizer],
-    ],
-]:
-    """Download and prepare the pre-trained model and tokenizer.
+):
+    print(f"Model: {model_name}, Version: {model_version}, Mode: {mode}")
 
-    Args:
-        model_name (str): A name of pre-trained model.
-        model_version (str): A version of pre-trained model.
-        mode (str): A status of either generating prompts or debiasing models.
-    """
     if model_name == "bert":
         model_class = BertForMaskedLM
         tokenizer_class = BertTokenizer
@@ -186,33 +171,39 @@ def prepare_model_and_tokenizer(
         model_class = AlbertForMaskedLM
         tokenizer_class = AlbertTokenizer
 
-    # get tokenizer because it is common for mode
+    # get tokenizer
     tokenizer = tokenizer_class.from_pretrained(model_version)
 
     if mode == "auto-debias":
         model = model_class.from_pretrained(model_version)
-
-        model.train().cuda()
+        if torch.cuda.is_available():
+            model = model.cuda()
+        model.train()
+        return model, tokenizer
 
     elif mode == "aa-debias":
         freezing_model = model_class.from_pretrained(model_version)
         tuning_model = model_class.from_pretrained(model_version)
 
-        freezing_model.eval().cuda()
-        tuning_model.train().cuda()
+        if torch.cuda.is_available():
+            freezing_model = freezing_model.cuda()
+            tuning_model = tuning_model.cuda()
+
+        freezing_model.eval()
+        tuning_model.train()
+        return freezing_model, tuning_model, tokenizer
 
     elif mode == "prompt":
         model = model_class.from_pretrained(model_version)
-
-        model = DataParallel(model)
-        model.eval().cuda()
-
-    # move all model parameters to the GPU
-    if mode in ["auto-debias", "generate"]:
+        if torch.cuda.is_available():
+            model = DataParallel(model)
+            model = model.cuda()
+        model.eval()
         return model, tokenizer
 
-    elif mode == "aa-debias":
-        return freezing_model, tuning_model, tokenizer
+    # Add error handling for unexpected mode values
+    raise ValueError(f"Unsupported mode: {mode}")
+
 
 
 class JSDivergence(nn.Module):
