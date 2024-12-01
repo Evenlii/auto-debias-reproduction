@@ -31,7 +31,7 @@ def parse_arguments():
     parser.add_argument(
         "--debias_type", type=str, choices=["gender", "race"], required=True, help="Debiasing type"
     )
-    parser.add_argument("--run_no", type=str, default="run00", help="Run identifier")  # Add this
+    parser.add_argument("--run_name", type=str, default="run00", help="Run identifier")  # Add this
     parser.add_argument("--data_dir", type=str, required=True, help="Data directory")
     parser.add_argument("--save_dir", type=str, default="./prompts/", help="Directory to save prompts")  # Add this
     parser.add_argument("--ckpt_path", type=str, default="./ckpts/", help="Checkpoint path")  # Add this
