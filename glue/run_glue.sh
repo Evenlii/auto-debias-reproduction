@@ -1,4 +1,4 @@
-export MODEL_NAME_OR_PATH=bert-base-uncased
+export MODEL_NAME_OR_PATH=../model/checkpoint-best/
 export TASK_NAME=mrpc
 export MAX_SEQ_LEN=128
 export BATCH_SIZE=32
@@ -20,4 +20,4 @@ python run_glue.py \
     --output_dir $OUTPUT_DIR \
     --run_name $RUN_NAME \
     --overwrite_output_dir \
-    --resume_from_checkpoint $CKPT_DIR
+    # --resume_from_checkpoint $CKPT_DIR

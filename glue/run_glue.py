@@ -3,7 +3,8 @@ import os
 import random
 from typing import Dict, List
 import numpy as np
-from datasets.load import load_dataset, load_metric
+from datasets.load import load_dataset
+from evaluate import load
 from logging import Logger
 from transformers import BatchEncoding, Trainer
 from transformers.hf_argparser import HfArgumentParser
@@ -203,9 +204,9 @@ def run_glue(
     # get a base metric class
     logger.info(f"Get a base metric class.")
     if data_args.task_name is not None:
-        metric = load_metric(path="glue", config_name=data_args.task_name)
+        metric = load("glue", config_name=data_args.task_name)
     else:
-        metric = load_metric(path="accuracy")
+        metric = load("accuracy")
 
     def compute_metrics(eval_pred: EvalPrediction) -> Dict[str, np.ndarray]:
         """Get a metric score corresponding to a specific task.
