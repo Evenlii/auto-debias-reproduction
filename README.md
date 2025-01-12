@@ -42,6 +42,8 @@ This project extends the **Context-Debias** framework to mitigate biases related
 
 - Maintained GLEU scores across tasks such as sentiment analysis, paraphrase detection, and textual entailment.
 
+---
+
 ## To Reproduce Result
 
 1. Context-Debias code is adapted from this repository of the original paper (https://github.com/kanekomasahiro/context-debias). Run preprocessing and then run debiasing on BERT-based pre-trained model using the word lists (age or disability). Save the model in checkpoint-best. These experiments were executed on a computer with local GPU. 
